@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ToDoItem from './ToDoItem';
 import { toast, Toaster } from 'react-hot-toast';
 import SidebarSettings from './SidebarSettings';
 import QuoteCard from './QuoteCard';
 import { usePreferences } from '../context/PreferencesContext';
-
+import { useTodos, useAddTodo, useUpdateTodo, useDeleteTodo } from '../hooks/useTodos';
 
 
 const TodoList = () => {
-    const { tasks, setTasks, deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode } = usePreferences();
+    const { data: tasks = [], isLoading } = useTodos();
+    const addTodo = useAddTodo();
+    const updateTodo = useUpdateTodo();
+    const deleteTodo = useDeleteTodo();
+    const { deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode } = usePreferences();
+    const notifiedTasks = useRef(new Set());
     const [modalOpen, setModalOpen] = useState(false);
     const [newTaskText, setNewTaskText] = useState("");
     const [newTaskDeadline, setNewTaskDeadline] = useState("");
@@ -22,58 +27,60 @@ const TodoList = () => {
         if (!deadlineMode) return;
         const interval = setInterval(() => {
             const updatedTasks = tasks.map(task => {
-                if (task.deadline && new Date(task.deadline) < Date.now() && !task.notified && !task.completed) {
+                if (task.deadline && new Date(task.deadline) < Date.now() && !notifiedTasks.has(task.id) && !task.completed) {
                     // Show toast
                     toast.error(`Deadline missed for task: "${task.text}"`);
-                    // Mark as notified
-                    return { ...task, notified: true };
+                    // Add task to notified set
+                    notifiedTasks.add(task.id)
                 }
                 return task;
             });
-
-            // Only update the state if something actually changed
-            if (JSON.stringify(tasks) !== JSON.stringify(updatedTasks)) {
-                setTasks(updatedTasks);
-            }
         }, 1000); // Check every second
 
-        // Clean up interval on component unmount
         return () => clearInterval(interval);
-    }, [tasks]);
+    }, [tasks, deadlineMode]);
 
     // Add or update a task
     const saveTask = () => {
         if (!newTaskText.trim()) return;
 
         if (editingTask) {
-            const updatedTasks = tasks.map((task) =>
-                task.id === editingTask.id
-                    ? { ...task, text: newTaskText.trim(), deadline: deadlineMode ? newTaskDeadline : null, completed: autoCompleteMode, notified: false }
-                    : task
+            updateTodo.mutate(
+                {
+                    text: newTaskText.trim(),
+                    deadline: deadlineMode ? newTaskDeadline : null,
+                    completed: autoCompleteMode,
+                    id: editingTask.id,
+                },
+                {
+                    onSuccess: () => {
+                        setEditingTask(null)
+                        setNewTaskText("");
+                        setNewTaskDeadline("");
+                        setModalOpen(false);
+                    }
+                }
             );
-            setTasks(updatedTasks);
-            setEditingTask(null);
         } else {
-            const newTask = {
-                id: Date.now(),
-                text: newTaskText.trim(),
-                deadline: deadlineMode ? newTaskDeadline : null,
-
-                completed: autoCompleteMode,
-                notified: false,
-            };
-
-            setTasks([newTask, ...tasks]);
+            addTodo.mutate(
+                {
+                    text: newTaskText.trim(),
+                    deadline: deadlineMode ? newTaskDeadline : null,
+                    completed: autoCompleteMode,
+                },
+                {
+                    onSuccess: () => {
+                        setNewTaskText("");
+                        setNewTaskDeadline("");
+                        setModalOpen(false);
+                    }
+                }
+            );
         }
-
-        setNewTaskText("");
-        setNewTaskDeadline("");
-        setModalOpen(false);
     };
 
     const deleteTask = (taskId) => {
-        const updatedTasks = tasks.filter((task) => task.id !== taskId);
-        setTasks(updatedTasks);
+        deleteTodo.mutate(taskId)
     };
 
     const editTask = (task) => {
@@ -94,12 +101,12 @@ const TodoList = () => {
     };
 
     const toggleTask = (taskId) => {
-        const updatedTasks = tasks.map(task =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task
-        );
-        setTasks(updatedTasks);
+        const taskToToggle = tasks.find(task => task.id === taskId);
+        updateTodo.mutate({
+            ...taskToToggle,
+            completed: !taskToToggle.completed,
+        });
     };
-
 
     return (
         <div className="flex min-h-screen">
@@ -223,7 +230,6 @@ const TodoList = () => {
                             </div>
                         ))
                         : tasks.map((task) => (
-                            //include createdAt field 
                             <ToDoItem
                                 key={task.id}
                                 task={task}

@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TodoList from './components/ToDoList';
+import Login from './auth/Login'
 import './index.css';
-import QuoteCard from './components/QuoteCard';
 import { Toaster } from 'react-hot-toast';
 
+
+
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   return (
     <div data-theme="synthwave" className="min-h-screen flex flex-col bg-base-100">
       <Toaster position="top-right" />
@@ -14,9 +18,12 @@ function App() {
         <h1 className="text-4xl font-bold text-left mb-4">📝 To-Do List</h1>
       </header>
 
-      {/* Main Content: Full-width horizontal split */}
+      {/* Main Content */}
       <main className="min-w-screen flex flex-grow overflow-hidden">
-        <TodoList />
+        {isLoggedIn ?
+          <TodoList />
+          : <Login onLoginSuccess={() => setIsLoggedIn(true)} />
+        }
       </main>
     </div>
   );
