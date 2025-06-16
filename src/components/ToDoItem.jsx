@@ -1,8 +1,5 @@
-import React from 'react';
-import TodoList from './ToDoList';
 import { useState } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
-
 
 
 const ToDoItem = ({ task, onDelete, onEdit, onView, onToggle }) => {
@@ -11,6 +8,7 @@ const ToDoItem = ({ task, onDelete, onEdit, onView, onToggle }) => {
     const formattedDeadline = task.deadline
         ? new Date(task.deadline).toLocaleString()
         : "No deadline";
+
 
     return (
         <ul className="list bg-base-100 shadow-md mb-4 w-full rounded-lg">
@@ -28,7 +26,7 @@ const ToDoItem = ({ task, onDelete, onEdit, onView, onToggle }) => {
                         className={`font-semibold text-lg ${task.completed ? "line-through text-gray-500" : ""
                             } ${deadlineMode && new Date(task.deadline) < Date.now() && !task.completed ? "text-red-500" : ""}`}
                     >
-                        {task.text || "Untitled Task"}
+                        {task.title || "Untitled Task"}
                     </h3>
                     {deadlineMode && (
                         <p className={`text-sm text-gray-500  ${deadlineMode && new Date(task.deadline) < Date.now() && !task.completed ? "text-red-500" : ""}`}>{formattedDeadline}</p>
@@ -59,7 +57,7 @@ const ToDoItem = ({ task, onDelete, onEdit, onView, onToggle }) => {
                     <div className="modal-box bg-base-100">
                         <h3 className="font-bold text-lg">Delete Task?</h3>
                         <p className="py-4">
-                            Are you sure you want to delete the task: <strong>{taskToDelete.text}</strong>?
+                            Are you sure you want to delete the task: <strong>{taskToDelete.title}</strong>?
                         </p>
                         <div className="modal-action">
                             <button

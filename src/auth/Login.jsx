@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Signup from './Signup'
-import button from 'daisyui/components/button';
 import { axiosInstance } from '../api/axiosConfig';
 
 
@@ -15,6 +14,7 @@ const Login = ({ onLoginSuccess }) => {
             const res = await axiosInstance.post(`/auth/login`, { email, password });
             onLoginSuccess();
         } catch (err) {
+            console.error(err.response.data)
             console.error(err);
         }
     };

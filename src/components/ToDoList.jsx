@@ -4,58 +4,63 @@ import { toast, Toaster } from 'react-hot-toast';
 import SidebarSettings from './SidebarSettings';
 import QuoteCard from './QuoteCard';
 import { usePreferences } from '../context/PreferencesContext';
-import { useTodos, useAddTodo, useUpdateTodo, useDeleteTodo } from '../hooks/useTodos';
+import { useTodos, useAddTodo, useUpdateTodo, useDeleteTodo, useToggleTodo } from '../hooks/useTodos';
 
-
-const TodoList = () => {
+const TodoList = ({ setIsLoggedIn }) => {
     const { data: tasks = [], isLoading } = useTodos();
+    console.log(tasks)
     const addTodo = useAddTodo();
     const updateTodo = useUpdateTodo();
     const deleteTodo = useDeleteTodo();
+    const toggleTodo = useToggleTodo();
     const { deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode } = usePreferences();
-    const notifiedTasks = useRef(new Set());
     const [modalOpen, setModalOpen] = useState(false);
-    const [newTaskText, setNewTaskText] = useState("");
+    const [newTaskTitle, setNewTaskTitle] = useState("");
     const [newTaskDeadline, setNewTaskDeadline] = useState("");
     const [editingTask, setEditingTask] = useState(null);
     const [viewingTask, setViewingTask] = useState(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
 
 
-    // Real-time deadline checking
     useEffect(() => {
         if (!deadlineMode) return;
         const interval = setInterval(() => {
-            const updatedTasks = tasks.map(task => {
-                if (task.deadline && new Date(task.deadline) < Date.now() && !notifiedTasks.has(task.id) && !task.completed) {
-                    // Show toast
-                    toast.error(`Deadline missed for task: "${task.text}"`);
-                    // Add task to notified set
-                    notifiedTasks.add(task.id)
+            tasks.forEach(task => {
+                if (
+                    task.deadline &&
+                    new Date(task.deadline) < Date.now() &&
+                    !task.notified &&
+                    !task.completed
+                ) {
+                    toast.error(`Deadline missed for task: "${task.title}"`);
+                    updateTodo.mutate({ ...task, notified: true });
                 }
-                return task;
             });
-        }, 1000); // Check every second
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [tasks, deadlineMode]);
 
     // Add or update a task
     const saveTask = () => {
-        if (!newTaskText.trim()) return;
+        if (!newTaskTitle.trim()) return;
 
         if (editingTask) {
             updateTodo.mutate(
                 {
-                    text: newTaskText.trim(),
-                    deadline: deadlineMode ? newTaskDeadline : null,
-                    completed: autoCompleteMode,
                     id: editingTask.id,
+                    title: newTaskTitle.trim(),
+                    description: newTaskTitle.trim(),
+                    completed: editingTask.completed,
+                    notified: editingTask.notified,
+                    deadline: deadlineMode
+                        ? new Date(newTaskDeadline).toISOString()
+                        : ""
                 },
                 {
                     onSuccess: () => {
                         setEditingTask(null)
-                        setNewTaskText("");
+                        setNewTaskTitle("");
                         setNewTaskDeadline("");
                         setModalOpen(false);
                     }
@@ -64,19 +69,25 @@ const TodoList = () => {
         } else {
             addTodo.mutate(
                 {
-                    text: newTaskText.trim(),
-                    deadline: deadlineMode ? newTaskDeadline : null,
+                    title: newTaskTitle.trim(),
+                    description: newTaskTitle.trim(),
                     completed: autoCompleteMode,
+                    notified: false,
+                    deadline: deadlineMode
+                        ? new Date(newTaskDeadline).toISOString()
+                        : ""
                 },
                 {
                     onSuccess: () => {
-                        setNewTaskText("");
+                        setNewTaskTitle("");
                         setNewTaskDeadline("");
                         setModalOpen(false);
+                        toast.success("Task Added!")
                     }
                 }
             );
         }
+
     };
 
     const deleteTask = (taskId) => {
@@ -85,8 +96,16 @@ const TodoList = () => {
 
     const editTask = (task) => {
         setEditingTask(task);
-        setNewTaskText(task.text);
-        setNewTaskDeadline(task.deadline);
+        setNewTaskTitle(task.title);
+        if (task.deadline) {
+            const toLocalDatetimeString = (date) => {
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            };
+            setNewTaskDeadline(toLocalDatetimeString(new Date(task.deadline)));
+        } else {
+            setNewTaskDeadline("");
+        }
         setModalOpen(true);
     };
 
@@ -100,13 +119,12 @@ const TodoList = () => {
         setViewModalOpen(false);
     };
 
+
     const toggleTask = (taskId) => {
-        const taskToToggle = tasks.find(task => task.id === taskId);
-        updateTodo.mutate({
-            ...taskToToggle,
-            completed: !taskToToggle.completed,
-        });
+        toggleTodo.mutate(taskId);
     };
+
+
 
     return (
         <div className="flex min-h-screen">
@@ -120,25 +138,26 @@ const TodoList = () => {
                 {/* Add/Edit Modal */}
                 {deadlineMode ? modalOpen && (
                     <div className="modal modal-open">
-                        <div className="modal-box bg-base-100 rounded-xl shadow-xl">
+                        <div className="modal-box bg-base-100 rounded-xl shadow-xl max-h-none overflow-visible">
                             <h3 className="font-bold text-lg mb-4">
                                 {editingTask ? "Edit Task" : "New Task"}
                             </h3>
                             <input
                                 type="text"
                                 placeholder="Task name"
-                                value={newTaskText}
-                                onChange={(e) => setNewTaskText(e.target.value)}
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
                                 className="input input-bordered w-full mb-4"
                             />
 
-                            <h3 className="text-left w-full mb-2">Deadline</h3>
                             <input
                                 type="datetime-local"
                                 value={newTaskDeadline}
                                 onChange={(e) => setNewTaskDeadline(e.target.value)}
                                 className="input input-bordered w-full mb-4"
                             />
+
+
                             <div className="modal-action flex justify-end gap-2">
                                 <button className="btn btn-primary" onClick={saveTask}>
                                     {editingTask ? "Save" : "Add"}
@@ -158,8 +177,8 @@ const TodoList = () => {
                             <input
                                 type="text"
                                 placeholder="Task name"
-                                value={newTaskText}
-                                onChange={(e) => setNewTaskText(e.target.value)}
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
                                 className="input input-bordered w-full mb-4"
                             />
                             <div className="modal-action flex justify-end gap-2">
@@ -181,7 +200,7 @@ const TodoList = () => {
                         <div className="modal-box">
                             <h3 className="font-bold text-lg">Task Details</h3>
                             <p className="text-lg mb-2">
-                                <strong>Task:</strong> {viewingTask.text || "Untitled Task"}
+                                <strong>Task:</strong> {viewingTask.title || "Untitled Task"}
                             </p>
                             <p className="text-sm text-gray-500">
                                 <strong>Deadline:</strong> {viewingTask.deadline || "No deadline"}
@@ -251,6 +270,7 @@ const TodoList = () => {
                     setDeadlineMode={setDeadlineMode}
                     autoCompleteMode={autoCompleteMode}
                     setAutoCompleteMode={setAutoCompleteMode}
+                    setIsLoggedIn={setIsLoggedIn}
                 />
             </div>
 

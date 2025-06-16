@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
+import Login from '../auth/Login';
+import { axiosInstance } from '../api/axiosConfig';
 
-const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode }) => {
+const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode, setIsLoggedIn }) => {
   const { theme, setTheme } = usePreferences();
 
   const toggleTheme = () => {
@@ -17,9 +19,13 @@ const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setA
     localStorage.setItem("theme", "synthwave");
   };
 
+  const handleLogout = async (e) => {
+    const res = await axiosInstance.post(`/auth/logout`);
+    setIsLoggedIn(false);
+  }
 
   return (
-    <div className="card h-60 w-75 bg-base-100 card-md shadow-sm">
+    <div className="card h-68 w-75 bg-base-100 card-md shadow-sm">
       <div className="card-body">
         <h2 className="card-title">⚙️ Settings</h2>
         <h1></h1>
@@ -85,8 +91,9 @@ const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setA
             />
           </label>
         </div>
-        <h1></h1>
         <button className="btn btn-soft btn-error w=5" onClick={resetDefaults}>Reset Settings</button>
+        <button className="btn btn-soft btn-error w=5" onClick={handleLogout}>Logout</button>
+
       </div>
     </div>
   );
