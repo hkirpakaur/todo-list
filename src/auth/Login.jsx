@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Signup from './Signup'
-import { axiosInstance } from '../api/axiosConfig';
+import { useLogin } from '../hooks/useTodos';
 
 
 const Login = ({ onLoginSuccess }) => {
@@ -8,15 +8,12 @@ const Login = ({ onLoginSuccess }) => {
     const [password, setPassword] = useState('');
     const [showSignup, setShowSignup] = useState(false);
 
+    const { mutate: login, isPending } = useLogin();
+
+
     const handleLogin = async (e) => {
         e.preventDefault();
-        try {
-            const res = await axiosInstance.post(`/auth/login`, { email, password });
-            onLoginSuccess();
-        } catch (err) {
-            console.error(err.response.data)
-            console.error(err);
-        }
+        login({ email, password });
     };
 
     if (showSignup) {
@@ -28,14 +25,14 @@ const Login = ({ onLoginSuccess }) => {
             <legend className="fieldset-legend">Login</legend>
 
             <label className="label">Email</label>
-            <input type="email" className="input" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input type="email" className="input" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={isPending} required />
 
             <label className="label">Password</label>
-            <input type="password" className="input" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input type="password" className="input" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} disabled={isPending} required />
 
-            <button type="submit" className="btn btn-neutral mt-4">Login</button>
+            <button type="submit" className="btn btn-neutral mt-4" disabled={isPending}>{isPending ? "Logging in..." : "Log in"}</button>
             <p> Don't have an account yet? </p>
-            <button type="button" className="btn btn-link" onClick={() => setShowSignup(true)}>Sign up</button>
+            <button type="button" className="btn btn-link" onClick={() => setShowSignup(true)} >Sign up</button>
         </form>
     );
 };

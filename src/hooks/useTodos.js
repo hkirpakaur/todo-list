@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTodos, addTodo, updateTodo, deleteTodo, toggleTodo } from '../api/todoApi';
+import { fetchTodos, addTodo, updateTodo, deleteTodo, toggleTodo, loginUser, signupUser, checkAuth, logoutUser } from '../api/todoApi';
 
 export const useTodos = () => {
     return useQuery({
@@ -39,8 +39,30 @@ export const useToggleTodo = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: toggleTodo,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['todos'] });
-        }
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+    });
+};
+
+export const useLogin = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: loginUser,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['authStatus'] }),
+    });
+};
+
+export const useCheckAuth = () => {
+    return useQuery({
+        queryKey: ['authStatus'],
+        queryFn: checkAuth,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useLogout = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: logoutUser,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['authStatus'] }),
     });
 };

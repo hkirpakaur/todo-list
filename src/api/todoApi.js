@@ -36,3 +36,24 @@ export const toggleTodo = async (id) => {
     const res = await axiosInstance.patch(`/todos/${id}/toggle`);
     return res.data.todo;
 };
+
+export const loginUser = async ({ email, password }) => {
+    const res = await axiosInstance.post('/auth/login', { email, password });
+    return res.data;
+};
+
+export const signupUser = async ({ email, password }) => {
+    const res = await axiosInstance.post('/auth/register', { email, password });
+    return res.data;
+}
+
+export const checkAuth = async () => {
+    const res = await axiosInstance.get('/auth/check');
+    return res.data;
+};
+
+
+export const logoutUser = async () => {
+    const res = await axiosInstance.post(`/auth/logout`);
+    return res.data;
+}

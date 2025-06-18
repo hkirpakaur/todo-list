@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ToDoItem from './ToDoItem';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import SidebarSettings from './SidebarSettings';
 import QuoteCard from './QuoteCard';
 import { usePreferences } from '../context/PreferencesContext';
 import { useTodos, useAddTodo, useUpdateTodo, useDeleteTodo, useToggleTodo } from '../hooks/useTodos';
 
-const TodoList = ({ setIsLoggedIn }) => {
+const TodoList = () => {
     const { data: tasks = [], isLoading } = useTodos();
     console.log(tasks)
     const addTodo = useAddTodo();
@@ -39,7 +39,7 @@ const TodoList = ({ setIsLoggedIn }) => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [tasks, deadlineMode]);
+    }, [tasks, deadlineMode, updateTodo]);
 
     // Add or update a task
     const saveTask = () => {
@@ -270,7 +270,6 @@ const TodoList = ({ setIsLoggedIn }) => {
                     setDeadlineMode={setDeadlineMode}
                     autoCompleteMode={autoCompleteMode}
                     setAutoCompleteMode={setAutoCompleteMode}
-                    setIsLoggedIn={setIsLoggedIn}
                 />
             </div>
 

@@ -1,22 +1,27 @@
 import { useState } from 'react';
-import { axiosInstance } from '../api/axiosConfig';
+import { signupUser } from '../api/todoApi';
+import { useMutation } from '@tanstack/react-query'
 
 
-const Signup = ({ onSignupSuccess }) => {
+const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    const signupMutation = useMutation({
+        mutationFn: signupUser,
+        onSuccess: () => {
+            toast.success("Signed up!");
+            onLoginSuccess();
+        },
+        onError: (err) => {
+            console.error(err);
+            toast.error(err?.response?.data?.message || "Signup failed");
+        },
+    });
+
     const handleSignup = async (e) => {
         e.preventDefault();
-        try {
-            const res = await axiosInstance.post(`/auth/register`, {
-                email,
-                password,
-            });
-            onSignupSuccess?.();
-        } catch (err) {
-            console.error(err);
-        }
+        signupMutation.mutate({ email, password });
     };
 
     return (
@@ -24,12 +29,12 @@ const Signup = ({ onSignupSuccess }) => {
             <legend className="fieldset-legend">Sign Up</legend>
 
             <label className="label">Email</label>
-            <input type="email" className="input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="email" className="input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={signupMutation.isLoading} />
 
             <label className="label">Password</label>
-            <input type="password" className="input" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input type="password" className="input" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={signupMutation.isLoading} />
 
-            <button type="submit" className="btn btn-neutral mt-4">Sign Up</button>
+            <button type="submit" className="btn btn-neutral mt-4" disabled={signupMutation.isLoading}>{signupMutation.isLoading ? "Signing up..." : "Sign up"}</button>
         </form>
     );
 };

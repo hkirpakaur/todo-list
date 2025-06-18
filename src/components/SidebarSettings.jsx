@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
-import Login from '../auth/Login';
-import { axiosInstance } from '../api/axiosConfig';
+import { useLogout } from '../hooks/useTodos';
 
-const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode, setIsLoggedIn }) => {
+const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setAutoCompleteMode }) => {
   const { theme, setTheme } = usePreferences();
 
   const toggleTheme = () => {
@@ -19,9 +17,10 @@ const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setA
     localStorage.setItem("theme", "synthwave");
   };
 
+  const { mutate: logout, isPending } = useLogout();
+
   const handleLogout = async (e) => {
-    const res = await axiosInstance.post(`/auth/logout`);
-    setIsLoggedIn(false);
+    logout();
   }
 
   return (
@@ -92,7 +91,7 @@ const SidebarSettings = ({ deadlineMode, setDeadlineMode, autoCompleteMode, setA
           </label>
         </div>
         <button className="btn btn-soft btn-error w=5" onClick={resetDefaults}>Reset Settings</button>
-        <button className="btn btn-soft btn-error w=5" onClick={handleLogout}>Logout</button>
+        <button className="btn btn-soft btn-error w=5" onClick={handleLogout} disabled={isPending}>{isPending ? "Logging out..." : "Log out"} </button>
 
       </div>
     </div>
